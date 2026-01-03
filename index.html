@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="th" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantitative Research Portfolio</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <style>
+        body { background-color: #0f1115; font-family: 'Segoe UI', sans-serif; color: #e0e0e0; }
+        .navbar { background: rgba(15,17,21,0.95); border-bottom: 1px solid #30363d; backdrop-filter: blur(10px); }
+        
+        /* 🔥 แก้สีกลับเป็นสีฟ้าครับ */
+        .text-accent { color: #58a6ff; } 
+        
+        .card-custom {
+            background: #161b22; border: 1px solid #30363d; transition: all 0.3s;
+            height: 100%; display: flex; flex-direction: column;
+        }
+        
+        /* 🔥 Hover แล้วเป็นสีฟ้า */
+        .card-custom:hover { 
+            transform: translateY(-5px); 
+            border-color: #58a6ff; 
+            box-shadow: 0 10px 30px rgba(88, 166, 255, 0.2); 
+        }
+        
+        .card-img-top { height: 200px; object-fit: cover; background: #21262d; border-bottom: 1px solid #30363d; }
+        .badge-tool { background: #21262d; border: 1px solid #30363d; color: #8b949e; margin-right: 4px; }
+        .btn-action { width: 100%; border-radius: 6px; }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar fixed-top">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="#">
+                <i class="bi bi-bar-chart-fill text-accent"></i> QUANT<span class="text-white-50">PORTFOLIO</span>
+            </a>
+        </div>
+    </nav>
+
+    <div class="container py-5 mt-5">
+        <div class="text-center mb-5">
+            <h1 class="display-5 fw-bold text-white">Research Gallery</h1>
+            <p class="text-secondary">Quantitative Studies & Data Analysis Models</p>
+        </div>
+
+        <div id="loading" class="text-center text-accent mt-5">
+            <div class="spinner-border" role="status"></div>
+        </div>
+
+        <div id="projectList" class="row g-4">
+            </div>
+    </div>
+
+    <script>
+        // --- ⚠️ อย่าลืมใส่ KEY เดิมของคุณนะครับ ---
+        const SUPABASE_URL = 'https://cdzaulnuxonegxxxlhvm.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNkemF1bG51eG9uZWd4eHhsaHZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NTQxNTgsImV4cCI6MjA4MzAzMDE1OH0.woMJFe0XN5PEQvZ0VMqf3gMcPl9HmjsAvcrdvsSaYWM'; 
+        // -------------------------
+
+        const { createClient } = supabase;
+        const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        async function loadProjects() {
+            const list = document.getElementById('projectList');
+            const loading = document.getElementById('loading');
+
+            const { data, error } = await sb
+                .from('research_projects')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            loading.style.display = 'none';
+
+            if (error) {
+                console.error(error);
+                list.innerHTML = `<p class="text-center text-danger">Error loading data.</p>`;
+                return;
+            }
+
+            if (!data || data.length === 0) {
+                list.innerHTML = `<p class="text-center text-secondary w-100">No projects found.</p>`;
+                return;
+            }
+
+            data.forEach(proj => {
+                const toolsHtml = proj.tools ? proj.tools.split(',').map(t => `<span class="badge badge-tool">${t.trim()}</span>`).join('') : '';
+                const imgDisplay = proj.image_url ? proj.image_url : 'https://placehold.co/600x400/21262d/8b949e?text=No+Preview';
+
+                let btnHtml = '';
+                if (proj.pdf_url) {
+                    btnHtml = `<a href="${proj.pdf_url}" target="_blank" class="btn btn-primary btn-action"><i class="bi bi-file-pdf"></i> Read PDF</a>`;
+                } else if (proj.link_url) {
+                    btnHtml = `<a href="${proj.link_url}" target="_blank" class="btn btn-outline-primary btn-action"><i class="bi bi-link-45deg"></i> Visit Link</a>`;
+                } else {
+                    btnHtml = `<button class="btn btn-dark btn-action text-secondary" disabled>No Link</button>`;
+                }
+
+                const html = `
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card card-custom">
+                            <img src="${imgDisplay}" class="card-img-top" loading="lazy">
+                            <div class="card-body d-flex flex-column">
+                                <h5 class="card-title fw-bold text-white">${proj.title}</h5>
+                                <div class="mb-2">${toolsHtml}</div>
+                                <p class="card-text text-secondary small flex-grow-1">${proj.description}</p>
+                                <div class="mt-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        ${proj.sample_size ? `<small class="text-secondary"><i class="bi bi-people"></i> N=${proj.sample_size}</small>` : ''}
+                                    </div>
+                                    ${btnHtml}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                list.innerHTML += html;
+            });
+        }
+
+        loadProjects();
+    </script>
+</body>
+</html>
